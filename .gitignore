@@ -26,3 +26,4 @@ go.work.sum
 
 __debug_*
 config.yml
+transmission/
