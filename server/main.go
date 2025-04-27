@@ -20,7 +20,7 @@ func main() {
 	parseFlags()
 	appConfig, err := config.LoadConfig(configFilePath)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -28,10 +28,10 @@ func main() {
 
 	torrentService, err := torrent.NewTorrentService(appConfig.Torrent)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	if err := torrentService.Init(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	appContext, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}

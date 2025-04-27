@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,15 +26,16 @@ func StartServer(appContext context.Context, wg *sync.WaitGroup, appConfig confi
 
 	go func() {
 		log.Printf("Server listening on port %d", appConfig.Server.Port)
-		if err := server.ListenAndServe(); err != nil {
-			panic(err)
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
 		}
+		log.Println("Server stopped")
 	}()
 
 	<-appContext.Done()
 	shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := server.Shutdown(shutdownContext); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
