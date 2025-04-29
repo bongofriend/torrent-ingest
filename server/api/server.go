@@ -6,15 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/bongofriend/torrent-ingest/config"
 	"github.com/bongofriend/torrent-ingest/torrent"
 )
 
-func StartServer(appContext context.Context, wg *sync.WaitGroup, appConfig config.AppConfig, torrentService torrent.TorrentService) {
-	defer wg.Done()
+func StartServer(appContext context.Context, appConfig config.AppConfig, torrentService torrent.TorrentService) {
 	apiMux := http.NewServeMux()
 	registerEndpoints(apiMux, torrentService)
 

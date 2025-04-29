@@ -3,14 +3,13 @@ package torrent
 import (
 	"context"
 	"errors"
-	"sync"
+	"log"
+	"time"
 
-	"github.com/bongofriend/torrent-ingest/config"
 	"github.com/bongofriend/torrent-ingest/models"
 )
 
 var (
-	ErrTorrentAlreadyAdded   error = errors.New("torrent is already added")
 	ErrUnknownTorrentRequest error = errors.New("request to add torrent not supported")
 )
 
@@ -24,55 +23,42 @@ func (a AddMagnetLinkRequest) MediaCategory() models.MediaCategory {
 }
 
 type TorrentService interface {
-	Init() error
 	AddMagnet(ctx context.Context, req AddMagnetLinkRequest) error
+	StartPolling(ctx context.Context, finishedTorrents chan<- AddedTorrent, interval time.Duration)
 }
 
 type torrentService struct {
-	addedFilesMutex *sync.RWMutex
-	addedFiles      map[string]AddedTorrent
-
 	transmissionClient TransmissionClient
 }
 
-func NewTorrentService(config config.TorrentConfig) (TorrentService, error) {
-	client, err := NewTransmissionClient(config.Transmission)
-	if err != nil {
-		return nil, err
-	}
+func NewTorrentService(t TransmissionClient) TorrentService {
 	return &torrentService{
-		addedFilesMutex:    &sync.RWMutex{},
-		addedFiles:         map[string]AddedTorrent{},
-		transmissionClient: client,
-	}, nil
-}
-
-// Init implements TorrentService.
-func (t *torrentService) Init() error {
-	allTorrents, err := t.transmissionClient.GetAllTorrents()
-	if err != nil {
-		return err
+		transmissionClient: t,
 	}
-	for _, to := range allTorrents {
-		t.addedFiles[to.Hash] = to
-	}
-	return nil
 }
 
 // AddMagnet implements TorrentService.
 func (t *torrentService) AddMagnet(ctx context.Context, req AddMagnetLinkRequest) error {
-	tor, err := t.transmissionClient.AddMagnetLink(ctx, req.Category, req.MagnetLink)
-	if err != nil {
-		return err
+	_, err := t.transmissionClient.AddMagnetLink(ctx, req.Category, req.MagnetLink)
+	return err
+}
+
+// StartPolling implements TorrentService.
+func (t *torrentService) StartPolling(ctx context.Context, finishedTorrentsChan chan<- AddedTorrent, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			torrents, err := t.transmissionClient.GetAllFinishedTorrents(ctx)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			for _, to := range torrents {
+				finishedTorrentsChan <- to
+			}
+		}
 	}
-	t.addedFilesMutex.RLock()
-	if _, ok := t.addedFiles[tor.Hash]; ok {
-		t.addedFilesMutex.RUnlock()
-		return ErrTorrentAlreadyAdded
-	}
-	t.addedFilesMutex.RUnlock()
-	t.addedFilesMutex.Lock()
-	t.addedFiles[tor.Hash] = tor
-	t.addedFilesMutex.Unlock()
-	return nil
 }

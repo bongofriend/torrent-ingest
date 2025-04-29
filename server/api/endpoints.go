@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 
@@ -45,10 +44,7 @@ func handleMagnetLink(torrentService torrent.TorrentService) http.HandlerFunc {
 			Category:   requestBody.Category,
 			MagnetLink: requestBody.MagnetLink,
 		})
-		if errors.Is(err, torrent.ErrTorrentAlreadyAdded) {
-			http.Error(w, conflictMessage, http.StatusConflict)
-			return
-		} else if err != nil {
+		if err != nil {
 			log.Println(err)
 			http.Error(w, internalServerErrorMessage, http.StatusInternalServerError)
 		}

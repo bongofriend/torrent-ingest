@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/goccy/go-yaml"
 )
@@ -9,6 +10,7 @@ import (
 type AppConfig struct {
 	Server  ServerConfig  `yaml:"server"`
 	Torrent TorrentConfig `yaml:"torrent"`
+	Paths   PathConfig    `yaml:"paths"`
 }
 
 type ServerConfig struct {
@@ -18,7 +20,17 @@ type ServerConfig struct {
 }
 
 type TorrentConfig struct {
-	Transmission TransmissionConfig `yaml:"transmission"`
+	PollingInterval time.Duration      `yaml:"polling_interval"`
+	Transmission    TransmissionConfig `yaml:"transmission"`
+}
+
+type PathConfig struct {
+	DownloadBasePath string             `yaml:"download_base_path"`
+	Destinations     DestionationConfig `yaml:"destinations"`
+}
+
+type DestionationConfig struct {
+	Audiobooks string `yaml:"audiobooks"`
 }
 
 type TransmissionConfig struct {
