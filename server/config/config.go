@@ -63,11 +63,13 @@ func (p PathConfig) Validate() error {
 
 type DestionationConfig struct {
 	Audiobooks string `yaml:"audiobooks"`
+	Anime      string `yaml:"anime"`
 }
 
 func (d DestionationConfig) Validate() error {
 	return validation.ValidateStruct(&d,
 		validation.Field(&d.Audiobooks, validation.NilOrNotEmpty),
+		validation.Field(&d.Anime, validation.NilOrNotEmpty),
 	)
 }
 

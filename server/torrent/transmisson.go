@@ -2,6 +2,7 @@ package torrent
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/url"
@@ -27,8 +28,19 @@ type AddedTorrent struct {
 	Category  models.MediaCategory
 }
 
+type AddMagnetLinkRequest struct {
+	Category   models.MediaCategory
+	MagnetLink string
+}
+
+type AddTorrentFileRequest struct {
+	Category           models.MediaCategory
+	TorrentFileContent []byte
+}
+
 type TransmissionClient interface {
-	AddMagnetLink(context context.Context, category models.MediaCategory, magnetLinkUrl string) (AddedTorrent, error)
+	AddMagnetLink(ctx context.Context, req AddMagnetLinkRequest) (AddedTorrent, error)
+	AddTorrentFile(ctx context.Context, req AddTorrentFileRequest) (AddedTorrent, error)
 	GetAllFinishedTorrents(ctx context.Context) ([]AddedTorrent, error)
 	RemoveTorrent(ctx context.Context, torrent AddedTorrent) error
 }
@@ -81,31 +93,52 @@ func (t transmissionClient) GetAllFinishedTorrents(ctx context.Context) ([]Added
 	return torrents, nil
 }
 
-// AddMagnetLink implements TransmissionClient.
-func (t transmissionClient) AddMagnetLink(context context.Context, category models.MediaCategory, magnetLinkUrl string) (AddedTorrent, error) {
+func (t transmissionClient) AddMagnetLink(context context.Context, request AddMagnetLinkRequest) (AddedTorrent, error) {
 	payload := transmissionrpc.TorrentAddPayload{
-		Filename: &magnetLinkUrl,
-		Labels:   []string{encodeCatgeoryAsLabel(category)},
+		Filename: &request.MagnetLink,
+		Labels:   []string{encodeCatgeoryAsLabel(request.Category)},
 	}
 	to, err := t.client.TorrentAdd(context, payload)
 	if err != nil {
 		return AddedTorrent{}, err
 	}
-	filenames := make([]string, len(to.Files))
-	for j, f := range to.Files {
-		filenames[j] = f.Name
+	return AddedTorrent{
+		Id:        *to.ID,
+		Hash:      *to.HashString,
+		FileNames: getFileNamesFromTorrent(to),
+		Category:  request.Category,
+	}, err
+}
+
+func (t transmissionClient) RemoveTorrent(ctx context.Context, torrent AddedTorrent) error {
+	return t.client.TorrentRemove(ctx, transmissionrpc.TorrentRemovePayload{
+		IDs:             []int64{torrent.Id},
+		DeleteLocalData: false,
+	})
+}
+
+func (t transmissionClient) AddTorrentFile(ctx context.Context, request AddTorrentFileRequest) (AddedTorrent, error) {
+	encodedFile := base64.StdEncoding.EncodeToString(request.TorrentFileContent)
+	payload := transmissionrpc.TorrentAddPayload{
+		Labels:   []string{encodeCatgeoryAsLabel(request.Category)},
+		MetaInfo: &encodedFile,
+	}
+	to, err := t.client.TorrentAdd(ctx, payload)
+	if err != nil {
+		return AddedTorrent{}, err
 	}
 	return AddedTorrent{
 		Id:        *to.ID,
 		Hash:      *to.HashString,
-		FileNames: filenames,
-		Category:  category,
-	}, err
+		FileNames: getFileNamesFromTorrent(to),
+		Category:  request.Category,
+	}, nil
 }
 
 func encodeCatgeoryAsLabel(category models.MediaCategory) string {
 	return fmt.Sprintf("%s:%s", categoryLabelPrefix, category)
 }
+
 func decodeCategoryFromLabels(labels []string) (string, error) {
 	for _, s := range labels {
 		if strings.HasPrefix(s, categoryLabelPrefix) {
@@ -115,10 +148,10 @@ func decodeCategoryFromLabels(labels []string) (string, error) {
 	return "", errCategoryNotFound
 }
 
-// StopTorrent implements TransmissionClient.
-func (t transmissionClient) RemoveTorrent(ctx context.Context, torrent AddedTorrent) error {
-	return t.client.TorrentRemove(ctx, transmissionrpc.TorrentRemovePayload{
-		IDs:             []int64{torrent.Id},
-		DeleteLocalData: false,
-	})
+func getFileNamesFromTorrent(to transmissionrpc.Torrent) []string {
+	filenames := make([]string, len(to.Files))
+	for j, f := range to.Files {
+		filenames[j] = f.Name
+	}
+	return filenames
 }

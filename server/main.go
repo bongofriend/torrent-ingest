@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/bongofriend/torrent-ingest/api"
 	"github.com/bongofriend/torrent-ingest/config"
@@ -30,33 +32,36 @@ func main() {
 		log.Fatal(err)
 	}
 
-	torrentService := torrent.NewTorrentService(transmissionClient)
 	torrentProcessor := torrent.NewFinishedTorrentProcessor(transmissionClient, appConfig.Paths)
 	appContext, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	finishedTorrentChan := make(chan torrent.AddedTorrent, 3)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		api.StartServer(appContext, appConfig, torrentService)
+		api.StartServer(appContext, appConfig, transmissionClient)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		torrentService.StartPolling(appContext, finishedTorrentChan, appConfig.Torrent.PollingInterval)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		torrentProcessor.HandleFinishedTorrent(appContext, finishedTorrentChan)
+		torrentProcessor.Start(appContext, appConfig.Torrent.PollingInterval)
 	}()
 	sig := <-signalChan
 	log.Printf("Signal received: %s", sig)
 	cancel()
+
+	shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	go func() {
+		<-shutdownContext.Done()
+		err := shutdownContext.Err()
+		if errors.Is(err, context.DeadlineExceeded) {
+			log.Panic("Timeout for shutdown reached")
+		}
+	}()
+
 	wg.Wait()
+	cancel()
 }
 
 func parseFlags() {
