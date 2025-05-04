@@ -55,7 +55,7 @@ func auth(serverConfig config.ServerConfig) middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			headerValue := r.Header.Get(authHeader)
 			if len(headerValue) == 0 || !strings.HasPrefix(headerValue, authHeaderPrefix) {
-				http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+				unauthorized(w)
 				return
 			}
 
@@ -63,19 +63,19 @@ func auth(serverConfig config.ServerConfig) middleware {
 			data, err := base64.StdEncoding.DecodeString(authData)
 			if err != nil {
 				log.Println(err)
-				http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+				unauthorized(w)
 				return
 			}
 			credentials := strings.Split(string(data), ":")
 			if len(credentials) != 2 {
-				http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+				unauthorized(w)
 				return
 			}
 
 			if credentials[0] == serverConfig.Username && credentials[1] == serverConfig.Password {
 				next.ServeHTTP(w, r)
 			} else {
-				http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+				unauthorized(w)
 			}
 		})
 	}

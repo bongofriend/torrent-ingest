@@ -44,6 +44,7 @@ func (t torrentFileRequestBody) Validate() error {
 func registerEndpoints(mux *http.ServeMux, transmissionClient torrent.TransmissionClient) {
 	mux.HandleFunc("POST /torrent/magnetlink", handleMagnetLink(transmissionClient))
 	mux.HandleFunc("POST /torrent/file", handleTorrentFile(transmissionClient))
+	mux.HandleFunc("GET /health", handleHealth)
 }
 
 func handleMagnetLink(transmissionClient torrent.TransmissionClient) http.HandlerFunc {
@@ -51,12 +52,12 @@ func handleMagnetLink(transmissionClient torrent.TransmissionClient) http.Handle
 		var requestBody magnetLinkRequestBody
 		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 			log.Println(err)
-			http.Error(w, internalServerErrorMessage, http.StatusInternalServerError)
+			internalServerError(w)
 			return
 		}
 		if err := requestBody.Validate(); err != nil {
 			log.Println(err)
-			http.Error(w, badRequestMessage, http.StatusBadRequest)
+			badRequest(w)
 			return
 		}
 
@@ -65,7 +66,7 @@ func handleMagnetLink(transmissionClient torrent.TransmissionClient) http.Handle
 			MagnetLink: requestBody.MagnetLink,
 		}); err != nil {
 			log.Println(err)
-			http.Error(w, internalServerErrorMessage, http.StatusInternalServerError)
+			internalServerError(w)
 		}
 	}
 }
@@ -82,14 +83,14 @@ func handleTorrentFile(transmissionClient torrent.TransmissionClient) http.Handl
 		file, _, err := r.FormFile(fileUploadFormName)
 		if err != nil {
 			log.Println(err)
-			http.Error(w, badRequestMessage, http.StatusRequestEntityTooLarge)
+			badRequest(w)
 			return
 		}
 
 		content, err := io.ReadAll(file)
 		if err != nil {
 			log.Println(err)
-			http.Error(w, internalServerErrorMessage, http.StatusInternalServerError)
+			internalServerError(w)
 			return
 		}
 		file.Close()
@@ -101,7 +102,7 @@ func handleTorrentFile(transmissionClient torrent.TransmissionClient) http.Handl
 
 		if err := request.Validate(); err != nil {
 			log.Println(err)
-			http.Error(w, badRequestMessage, http.StatusBadRequest)
+			badRequest(w)
 			return
 		}
 
@@ -110,8 +111,13 @@ func handleTorrentFile(transmissionClient torrent.TransmissionClient) http.Handl
 			TorrentFileContent: request.TorrentFileContent,
 		}); err != nil {
 			log.Println(err)
-			http.Error(w, internalServerErrorMessage, http.StatusInternalServerError)
+			internalServerError(w)
 			return
 		}
 	}
+
+}
+
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
