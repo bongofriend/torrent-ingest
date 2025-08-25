@@ -23,6 +23,8 @@ func Run(ctx context.Context, appConfig config.AppConfig) {
 		log.Fatal(err)
 	}
 
+	printConfig(appConfig);
+
 	torrentProcessor := torrent.NewFinishedTorrentProcessor(transmissionClient, appConfig.Paths)
 	appContext, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -53,4 +55,24 @@ func Run(ctx context.Context, appConfig config.AppConfig) {
 
 	wg.Wait()
 	cancel()
+}
+
+func printConfig(appConfig config.AppConfig) {
+	log.Println("Application configuration:")
+	log.Printf(" - Server port: %d", appConfig.Server.Port)
+	log.Printf(" - Torrent polling interval: %s", appConfig.Torrent.PollingInterval)
+	log.Printf(" - Transmission URL: %s", appConfig.Torrent.Transmission.Url)
+	log.Printf(" - Paths:")
+	if appConfig.Paths.Destinations.Audiobooks != nil {
+		log.Printf("   - Audiobooks: %s", *appConfig.Paths.Destinations.Audiobooks)
+	}
+	if appConfig.Paths.Destinations.Anime != nil {
+		log.Printf("   - Anime: %s", *appConfig.Paths.Destinations.Anime)
+	}
+	if appConfig.Paths.Destinations.Movie != nil {
+		log.Printf("   - Movie: %s", *appConfig.Paths.Destinations.Movie)
+	}
+	if appConfig.Paths.Destinations.Series != nil {
+		log.Printf("   - Series: %s", *appConfig.Paths.Destinations.Series)
+	}
 }

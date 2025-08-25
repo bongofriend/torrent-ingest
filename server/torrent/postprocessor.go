@@ -100,6 +100,9 @@ func (f finishedTorrentPostProcessor) handleFinishedTorrent(ctx context.Context,
 					dest = f.pathConfig.Destinations.Series
 				case models.Movies:
 					dest = f.pathConfig.Destinations.Movie
+				default:
+					log.Printf("Unknown category %s for torrent %s", t.Category, t.Hash)
+					return
 				}
 
 				if err := f.copy(t, dest); err != nil {
