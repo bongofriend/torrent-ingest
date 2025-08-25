@@ -12,7 +12,7 @@ import (
 	"github.com/bongofriend/torrent-ingest/torrent"
 )
 
-func StartServer(appContext context.Context, appConfig config.AppConfig, transmissionClient torrent.TransmissionClient) {
+func startServer(appContext context.Context, appConfig config.AppConfig, transmissionClient torrent.TransmissionClient) {
 	apiMux := http.NewServeMux()
 	registerEndpoints(apiMux, transmissionClient)
 
