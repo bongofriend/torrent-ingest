@@ -63,16 +63,16 @@ func printConfig(appConfig config.AppConfig) {
 	log.Printf(" - Torrent polling interval: %s", appConfig.Torrent.PollingInterval)
 	log.Printf(" - Transmission URL: %s", appConfig.Torrent.Transmission.Url)
 	log.Printf(" - Paths:")
-	if appConfig.Paths.Destinations.Audiobooks != nil {
-		log.Printf("   - Audiobooks: %s", *appConfig.Paths.Destinations.Audiobooks)
+	if appConfig.Paths.Destinations.Audiobooks != "" {
+		log.Printf("   - Audiobooks: %s", appConfig.Paths.Destinations.Audiobooks)
 	}
-	if appConfig.Paths.Destinations.Anime != nil {
-		log.Printf("   - Anime: %s", *appConfig.Paths.Destinations.Anime)
+	if appConfig.Paths.Destinations.Anime != "" {
+		log.Printf("   - Anime: %s", appConfig.Paths.Destinations.Anime)
 	}
-	if appConfig.Paths.Destinations.Movie != nil {
-		log.Printf("   - Movie: %s", *appConfig.Paths.Destinations.Movie)
+	if appConfig.Paths.Destinations.Movie != "" {
+		log.Printf("   - Movie: %s", appConfig.Paths.Destinations.Movie)
 	}
-	if appConfig.Paths.Destinations.Series != nil {
-		log.Printf("   - Series: %s", *appConfig.Paths.Destinations.Series)
+	if appConfig.Paths.Destinations.Series != "" {
+		log.Printf("   - Series: %s", appConfig.Paths.Destinations.Series)
 	}
 }

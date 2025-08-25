@@ -2,7 +2,6 @@ package torrent
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"path/filepath"
 	"sync"
@@ -90,7 +89,7 @@ func (f finishedTorrentPostProcessor) handleFinishedTorrent(ctx context.Context,
 					log.Println(err)
 					return
 				}
-				var dest *string
+				var dest string
 				switch t.Category {
 				case models.Audiobook:
 					dest = f.pathConfig.Destinations.Audiobooks
@@ -105,6 +104,10 @@ func (f finishedTorrentPostProcessor) handleFinishedTorrent(ctx context.Context,
 					return
 				}
 
+				if len(dest) == 0 {
+					log.Printf("No destination configured for category %s, skipping torrent %s", t.Category, t.Hash)
+					return	
+				}
 				if err := f.copy(t, dest); err != nil {
 					log.Println(err)
 					return
@@ -114,13 +117,10 @@ func (f finishedTorrentPostProcessor) handleFinishedTorrent(ctx context.Context,
 	}
 }
 
-func (f finishedTorrentPostProcessor) copy(t AddedTorrent, dest *string) error {
-	if dest == nil {
-		return fmt.Errorf("no destination defined for category %s", t.Category)
-	}
+func (f finishedTorrentPostProcessor) copy(t AddedTorrent, dest string) error {
 	for _, fi := range t.FileNames {
 		srcPath := filepath.Join(f.pathConfig.DownloadBasePath, fi)
-		destPath := filepath.Join(*dest, fi)
+		destPath := filepath.Join(dest, fi)
 		if err := cp.Copy(srcPath, destPath); err != nil {
 			return err
 		}
