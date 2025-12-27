@@ -1,5 +1,19 @@
 ---
 services:
+  torrent-ingest:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.local
+    entrypoint: ./app --config /etc/config.yml
+    volumes:
+      - ./config.yml:/etc/config.yml:ro
+      - ./data/transmission/downloads/complete:/data/downloads/complete
+      - ./data/audiobooks:/data/audiobooks
+      - ./data/music:/data/music
+    ports:
+      - 81:81
+    environment:
+      - TDLP_DEBUG=true
   transmission:
     image: lscr.io/linuxserver/transmission:latest
     container_name: transmission
@@ -10,9 +24,9 @@ services:
       - USER=test #optional
       - PASS=test #optional
     volumes:
-      - ./transmission/config:/config
-      - ./transmission/downloads:/downloads #optional
-      - ./transmission/watch:/watch #optional
+      - ./data/transmission/config:/config
+      - ./data/transmission/downloads:/downloads #optional
+      - ./data/transmission/watch:/watch #optional
     ports:
       - 9091:9091
       - 51413:51413

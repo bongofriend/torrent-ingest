@@ -8,6 +8,7 @@ import (
 
 	"github.com/bongofriend/torrent-ingest/models"
 	"github.com/bongofriend/torrent-ingest/torrent"
+	"github.com/bongofriend/torrent-ingest/ytdlp"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
@@ -41,9 +42,24 @@ func (t torrentFileRequestBody) Validate() error {
 	)
 }
 
-func registerEndpoints(mux *http.ServeMux, transmissionClient torrent.TransmissionClient) {
+type ytdlpDownlinkRequest struct {
+	Category       models.MediaCategory  `json:"category"`
+	YoutubeUrlType models.YoutubeUrlType `json:"urlType"`
+	YoutubeUrl     string                `json:"url"`
+}
+
+func (y ytdlpDownlinkRequest) Validate() error {
+	return validation.ValidateStruct(&y,
+		validation.Field(&y.Category),
+		validation.Field(&y.YoutubeUrlType),
+		validation.Field(&y.YoutubeUrl, validation.Required),
+	)
+}
+
+func registerEndpoints(mux *http.ServeMux, transmissionClient torrent.TransmissionClient, ytdlpDownloadService ytdlp.YtdlpDownloadService) {
 	mux.HandleFunc("POST /torrent/magnetlink", handleMagnetLink(transmissionClient))
 	mux.HandleFunc("POST /torrent/file", handleTorrentFile(transmissionClient))
+	mux.HandleFunc("POST /youtube/download", handleYoutubeDownload(ytdlpDownloadService))
 	mux.HandleFunc("GET /health", handleHealth)
 }
 
@@ -116,6 +132,32 @@ func handleTorrentFile(transmissionClient torrent.TransmissionClient) http.Handl
 		}
 	}
 
+}
+
+func handleYoutubeDownload(ytdlpDownloadService ytdlp.YtdlpDownloadService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var requestBody ytdlpDownlinkRequest
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			log.Println(err)
+			internalServerError(w)
+			return
+		}
+		if err := requestBody.Validate(); err != nil {
+			log.Println(err)
+			badRequest(w)
+			return
+		}
+		downloadRequest := ytdlp.AddDownloadRequest{
+			Url:      requestBody.YoutubeUrl,
+			UrlType:  requestBody.YoutubeUrlType,
+			Category: requestBody.Category,
+		}
+		if err := ytdlpDownloadService.QueueDownload(r.Context(), downloadRequest); err != nil {
+			log.Println(err)
+			internalServerError(w)
+			return
+		}
+	}
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {

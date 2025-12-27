@@ -126,6 +126,7 @@ func rootCmd() *cli.Command {
 				Name:        "music-path",
 				Usage:       "Path to download music",
 				Destination: &appConfig.Paths.Destinations.Music,
+				Sources:     cli.EnvVars(pathsMusicPath),
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
