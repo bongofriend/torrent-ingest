@@ -66,8 +66,8 @@ type DestionationConfig struct {
 	Anime      string `yaml:"anime"`
 	Series     string `yaml:"series"`
 	Movie      string `yaml:"movie"`
+	Music      string `yaml:"music"`
 }
-
 
 type TransmissionConfig struct {
 	Url      string `yaml:"url"`

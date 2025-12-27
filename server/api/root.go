@@ -23,7 +23,7 @@ func Run(ctx context.Context, appConfig config.AppConfig) {
 		log.Fatal(err)
 	}
 
-	printConfig(appConfig);
+	printConfig(appConfig)
 
 	torrentProcessor := torrent.NewFinishedTorrentProcessor(transmissionClient, appConfig.Paths)
 	appContext, cancel := context.WithCancel(context.Background())
@@ -74,5 +74,8 @@ func printConfig(appConfig config.AppConfig) {
 	}
 	if appConfig.Paths.Destinations.Series != "" {
 		log.Printf("   - Series: %s", appConfig.Paths.Destinations.Series)
+	}
+	if appConfig.Paths.Destinations.Music != "" {
+		log.Printf("   - Music: %s", appConfig.Paths.Destinations.Music)
 	}
 }
