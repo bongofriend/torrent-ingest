@@ -15,3 +15,14 @@ const (
 func (m MediaCategory) Validate() error {
 	return validation.Validate(string(m), validation.Required, validation.In(string(Audiobook), string(Anime), string(Series), string(Movies), string(Music)))
 }
+
+type YoutubeUrlType string
+
+const (
+	Video    YoutubeUrlType = "video"
+	Playlist YoutubeUrlType = "playlist"
+)
+
+func (y YoutubeUrlType) Validate() error {
+	return validation.Validate(string(y), validation.Required, validation.In(string(Video), string(Playlist)))
+}
