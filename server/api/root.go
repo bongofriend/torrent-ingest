@@ -12,6 +12,7 @@ import (
 
 	"github.com/bongofriend/torrent-ingest/config"
 	"github.com/bongofriend/torrent-ingest/torrent"
+	"github.com/bongofriend/torrent-ingest/ytdlp"
 )
 
 func Run(ctx context.Context, appConfig config.AppConfig) {
@@ -29,17 +30,26 @@ func Run(ctx context.Context, appConfig config.AppConfig) {
 	appContext, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		startServer(appContext, appConfig, transmissionClient)
-	}()
+	ytdlpService := ytdlp.NewYtlDlpService(appConfig.Paths)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		torrentProcessor.Start(appContext, appConfig.Torrent.PollingInterval)
 	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ytdlpService.Start(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		startServer(appContext, appConfig, transmissionClient, ytdlpService)
+	}()
+
 	sig := <-signalChan
 	log.Printf("Signal received: %s", sig)
 	cancel()

@@ -26,4 +26,5 @@ go.work.sum
 
 __debug_*
 config.yml
-transmission/
+data/
+.DS_Store

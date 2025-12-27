@@ -10,11 +10,12 @@ import (
 
 	"github.com/bongofriend/torrent-ingest/config"
 	"github.com/bongofriend/torrent-ingest/torrent"
+	"github.com/bongofriend/torrent-ingest/ytdlp"
 )
 
-func startServer(appContext context.Context, appConfig config.AppConfig, transmissionClient torrent.TransmissionClient) {
+func startServer(appContext context.Context, appConfig config.AppConfig, transmissionClient torrent.TransmissionClient, ytdlpDownloadService ytdlp.YtdlpDownloadService) {
 	apiMux := http.NewServeMux()
-	registerEndpoints(apiMux, transmissionClient)
+	registerEndpoints(apiMux, transmissionClient, ytdlpDownloadService)
 
 	middleware := applyMiddleware(logging(), auth(appConfig.Server))
 	server := &http.Server{
