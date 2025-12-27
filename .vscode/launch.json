@@ -11,7 +11,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/server",
-            "args": ["-configFilePath", "../config.yml"]
+            "args": ["--config", "../config.yml"]
         }
     ]
 }

@@ -99,6 +99,8 @@ func (f finishedTorrentPostProcessor) handleFinishedTorrent(ctx context.Context,
 					dest = f.pathConfig.Destinations.Series
 				case models.Movies:
 					dest = f.pathConfig.Destinations.Movie
+				case models.Music:
+					dest = f.pathConfig.Destinations.Music
 				default:
 					log.Printf("Unknown category %s for torrent %s", t.Category, t.Hash)
 					return
@@ -106,7 +108,7 @@ func (f finishedTorrentPostProcessor) handleFinishedTorrent(ctx context.Context,
 
 				if len(dest) == 0 {
 					log.Printf("No destination configured for category %s, skipping torrent %s", t.Category, t.Hash)
-					return	
+					return
 				}
 				if err := f.copy(t, dest); err != nil {
 					log.Println(err)

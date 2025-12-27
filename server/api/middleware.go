@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/bongofriend/torrent-ingest/config"
 )
@@ -38,14 +37,13 @@ func (r *responseWithStatus) WriteHeader(statusCode int) {
 
 func logging() middleware {
 	return func(next http.Handler) http.Handler {
-		now := time.Now()
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rsp := &responseWithStatus{
 				ResponseWriter: w,
 				StatusCode:     http.StatusOK,
 			}
 			next.ServeHTTP(rsp, r)
-			log.Printf("[%s] %s - %d %s", r.Method, r.URL, rsp.StatusCode, time.Since(now))
+			log.Printf("[%s] %s - %d", r.Method, r.URL, rsp.StatusCode)
 		})
 	}
 }
